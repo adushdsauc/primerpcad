@@ -34,9 +34,22 @@ const PORT = 8080;
 // Middleware
 app.use(express.json());
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://primerpcad-pm4h.vercel.app",
+  "https://primerpcad-pm4h-git-main-princes-projects-8ae55c4f.vercel.app",
+  "https://primerpcad-pm4h-ekujzv001-princes-projects-8ae55c4f.vercel.app"
+];
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
@@ -64,7 +77,7 @@ passport.use(
     {
       clientID: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      callbackURL: "http://localhost:8080/auth/discord/callback",
+      callbackURL: "https://primerpcad-production.up.railway.app/auth/discord/callback",
       scope: ["identify", "guilds", "guilds.members.read"],
     },
     async (accessToken, refreshToken, profile, done) => {
