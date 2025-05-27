@@ -31,9 +31,13 @@ const warrantRoutes = require("./routes/warrants");
 const app = express();
 const PORT = 8080;
 
-// Middleware
-app.use(express.json());
+// Debugging middleware for sessions
+app.use((req, res, next) => {
+  console.log("🧾 Incoming Request:", req.method, req.url);
+  next();
+});
 
+// CORS Setup
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.FRONTEND_URL,
@@ -56,23 +60,32 @@ app.use(
   })
 );
 
+// Session Setup
 app.use(
   session({
     name: "sid",
     secret: "super-secret-session",
     resave: false,
     saveUninitialized: false,
-cookie: {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-},
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    },
   })
 );
 
+app.use(express.json());
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Debug log
+app.use((req, res, next) => {
+  console.log("🧠 Session User:", req.user);
+  next();
+});
+
+// Passport Discord Strategy
 passport.use(
   new DiscordStrategy(
     {
@@ -139,6 +152,7 @@ passport.use(
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
+// Auth Routes
 app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get(
@@ -165,7 +179,7 @@ app.get("/api/auth/me", (req, res) => {
   res.json({ discordId, username, discriminator, avatar, globalName, roles });
 });
 
-// Routes
+// API Routes
 app.use("/api/civilians", civilianRoutes);
 app.use("/api/licenses", licenseRoutes);
 app.use("/api/vehicles", vehicleRoutes);
@@ -189,6 +203,7 @@ app.use("/api/clock", clockRoutes);
 app.use("/api/psoreports", psoReportRoutes);
 app.use("/api/warrants", warrantRoutes);
 
+// DB Connect
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
@@ -198,7 +213,8 @@ mongoose.connect(process.env.MONGO_URI)
     console.error("❌ MongoDB connection error:", err);
   });
 
-process.on("unhandledRejection", (reason, promise) => {
+// Global Error Handlers
+process.on("unhandledRejection", (reason) => {
   console.error("🧨 Unhandled Promise Rejection:", reason);
 });
 
