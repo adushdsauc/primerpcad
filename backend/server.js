@@ -36,9 +36,10 @@ app.use(express.json());
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://primerpcad-pm4h.vercel.app",
+  process.env.FRONTEND_URL,
   "https://primerpcad-pm4h-git-main-princes-projects-8ae55c4f.vercel.app",
-  "https://primerpcad-pm4h-ekujzv001-princes-projects-8ae55c4f.vercel.app"
+  "https://primerpcad-pm4h-ekujzv001-princes-projects-8ae55c4f.vercel.app",
+  "https://primerpcad-pm4h-princes-projects.vercel.app"
 ];
 
 app.use(
@@ -47,6 +48,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn("❌ Blocked by CORS:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
@@ -71,7 +73,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Discord OAuth Strategy with multi-guild role sync
 passport.use(
   new DiscordStrategy(
     {
@@ -83,23 +84,16 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         console.log("👤 OAuth profile ID:", profile.id);
-
         const guildIds = process.env.DISCORD_GUILD_IDS.split(",");
         const botToken = process.env.DISCORD_BOT_TOKEN;
         let allRoles = [];
 
         for (const guildId of guildIds) {
-          const res = await fetch(
-            `https://discord.com/api/v10/guilds/${guildId}/members/${profile.id}`,
-            {
-              headers: {
-                Authorization: `Bot ${botToken}`,
-              },
-            }
-          );
+          const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${profile.id}`, {
+            headers: { Authorization: `Bot ${botToken}` },
+          });
 
           console.log(`📡 Guild ${guildId} fetch status:`, res.status);
-
           if (!res.ok) {
             const errorText = await res.text();
             console.log(`❌ Failed to fetch member from ${guildId}:`, errorText);
@@ -108,7 +102,6 @@ passport.use(
 
           const member = await res.json();
           console.log(`✅ Roles from guild ${guildId}:`, member.roles);
-
           if (Array.isArray(member.roles)) {
             allRoles = [...new Set([...allRoles, ...member.roles])];
           }
@@ -143,19 +136,8 @@ passport.use(
   )
 );
 
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-  done(null, user);
-});
-// In server.js
-app.get("/test-cookie", (req, res) => {
-  console.log("🍪 Session:", req.session);
-  console.log("👤 User:", req.user);
-  res.send("Session checked");
-});
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
 app.get("/auth/discord", passport.authenticate("discord"));
 
@@ -179,12 +161,11 @@ app.get("/auth/logout", (req, res) => {
 
 app.get("/api/auth/me", (req, res) => {
   if (!req.user) return res.status(401).json({ message: "Not logged in" });
-
   const { discordId, username, discriminator, avatar, globalName, roles } = req.user;
   res.json({ discordId, username, discriminator, avatar, globalName, roles });
 });
 
-// API Routes
+// Routes
 app.use("/api/civilians", civilianRoutes);
 app.use("/api/licenses", licenseRoutes);
 app.use("/api/vehicles", vehicleRoutes);
@@ -208,8 +189,7 @@ app.use("/api/clock", clockRoutes);
 app.use("/api/psoreports", psoReportRoutes);
 app.use("/api/warrants", warrantRoutes);
 
-mongoose
-  .connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
     console.log("📂 Using DB:", mongoose.connection.name);
