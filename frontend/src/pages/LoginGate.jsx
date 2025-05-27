@@ -12,14 +12,14 @@ const LoginGate = () => {
     }
   }, [discordId, loading, navigate]);
 
-  const handleLogin = () => {
-    try {
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
-      window.location.href = `${baseUrl}/auth/discord`;
-    } catch (err) {
-      console.error("❌ Redirect failed:", err);
-    }
-  };
+const handleLogin = () => {
+  try {
+    const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    window.location.href = `${baseUrl}/auth/discord`;
+  } catch (err) {
+    console.error("❌ Redirect failed:", err);
+  }
+};
 
   if (loading) {
     return (
