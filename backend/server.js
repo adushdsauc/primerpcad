@@ -1,4 +1,7 @@
+// Load environment variables
 require("dotenv").config();
+
+// Import dependencies
 const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
@@ -6,7 +9,9 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const DiscordStrategy = require("passport-discord").Strategy;
 const fetch = require("node-fetch");
+const path = require("path");
 
+// Import models and routes
 const User = require("./models/User");
 const civilianRoutes = require("./routes/civilians");
 const licenseRoutes = require("./routes/licenses");
@@ -24,20 +29,18 @@ const dmRoutes = require("./routes/dm");
 const callRoutes = require("./routes/calls");
 const boloRoutes = require("./routes/bolos");
 const clockRoutes = require("./routes/clock");
-const { client } = require("./bot");
 const psoReportRoutes = require("./routes/psoreports");
 const warrantRoutes = require("./routes/warrants");
+const { client } = require("./bot");
 
+// Initialize Express app
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
-// Debugging middleware for sessions
-app.use((req, res, next) => {
-  console.log("🧾 Incoming Request:", req.method, req.url);
-  next();
-});
+// Middleware to parse JSON
+app.use(express.json());
 
-// CORS Setup
+// Define allowed origins for CORS
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.FRONTEND_URL,
@@ -46,6 +49,7 @@ const allowedOrigins = [
   "https://primerpcad-pm4h-princes-projects.vercel.app"
 ];
 
+// Configure CORS
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -60,11 +64,11 @@ app.use(
   })
 );
 
-// Session Setup
+// Configure session management
 app.use(
   session({
     name: "sid",
-    secret: "super-secret-session",
+    secret: process.env.SESSION_SECRET || "super-secret-session",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -75,17 +79,11 @@ app.use(
   })
 );
 
-app.use(express.json());
+// Initialize Passport.js
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Debug log
-app.use((req, res, next) => {
-  console.log("🧠 Session User:", req.user);
-  next();
-});
-
-// Passport Discord Strategy
+// Configure Passport.js with Discord strategy
 passport.use(
   new DiscordStrategy(
     {
@@ -149,10 +147,11 @@ passport.use(
   )
 );
 
+// Serialize and deserialize user
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// Auth Routes
+// Authentication routes
 app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get(
@@ -173,13 +172,14 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
+// Endpoint to get authenticated user info
 app.get("/api/auth/me", (req, res) => {
   if (!req.user) return res.status(401).json({ message: "Not logged in" });
   const { discordId, username, discriminator, avatar, globalName, roles } = req.user;
   res.json({ discordId, username, discriminator, avatar, globalName, roles });
 });
 
-// API Routes
+// API routes
 app.use("/api/civilians", civilianRoutes);
 app.use("/api/licenses", licenseRoutes);
 app.use("/api/vehicles", vehicleRoutes);
@@ -203,8 +203,17 @@ app.use("/api/clock", clockRoutes);
 app.use("/api/psoreports", psoReportRoutes);
 app.use("/api/warrants", warrantRoutes);
 
-// DB Connect
-mongoose.connect(process.env.MONGO_URI)
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "build")));
+
+// The "catchall" handler: for any request that doesn't match above, send back React's index.html file.
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
     console.log("📂 Using DB:", mongoose.connection.name);
@@ -213,8 +222,8 @@ mongoose.connect(process.env.MONGO_URI)
     console.error("❌ MongoDB connection error:", err);
   });
 
-// Global Error Handlers
-process.on("unhandledRejection", (reason) => {
+// Global error handlers
+process.on("unhandledRejection", (reason, promise) => {
   console.error("🧨 Unhandled Promise Rejection:", reason);
 });
 
@@ -222,6 +231,7 @@ process.on("uncaughtException", (err) => {
   console.error("🔥 Uncaught Exception:", err);
 });
 
+// Start the server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
