@@ -62,11 +62,11 @@ app.use(
     secret: "super-secret-session",
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    },
+cookie: {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+},
   })
 );
 
