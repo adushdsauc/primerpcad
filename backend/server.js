@@ -141,6 +141,12 @@ passport.deserializeUser((user, done) => done(null, user));
 
 app.get("/auth/discord", passport.authenticate("discord"));
 
+app.get("/test-session", (req, res) => {
+  console.log("🍪 Session:", req.session);
+  console.log("👤 User:", req.user);
+  res.send(req.user ? "✅ Logged in" : "❌ Not logged in");
+});
+
 app.get(
   "/auth/discord/callback",
   passport.authenticate("discord", { failureRedirect: "/auth/failure" }),
