@@ -41,29 +41,33 @@ const PORT = process.env.PORT || 8080;
 // Middleware to parse JSON
 app.use(express.json());
 
-// Define allowed origins for CORS
+// Define your list of allowed origins
 const allowedOrigins = [
-  "http://localhost:3000",
+  'http://localhost:3000',
   process.env.FRONTEND_URL,
-  "https://primerpcad-pm4h-git-main-princes-projects-8ae55c4f.vercel.app",
-  "https://primerpcad-pm4h-ekujzv001-princes-projects-8ae55c4f.vercel.app",
-  "https://primerpcad-pm4h-princes-projects.vercel.app"
-];
+  'https://primerpcad-pm4h-git-main-princes-projects-8ae55c4f.vercel.app',
+  'https://primerpcad-pm4h-ekujzv001-princes-projects-8ae55c4f.vercel.app',
+  'https://primerpcad-pm4h-princes-projects.vercel.app'
+]
 
 // Configure CORS
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn("❌ Blocked by CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.warn('❌ Blocked by CORS:', origin);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
+// Apply the CORS middleware
+app.use(cors(corsOptions));
+  app.set('trust proxy', 1);
 
 // Configure session management with memorystore
 app.use(session({
@@ -72,10 +76,11 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Ensures cookies are only sent over HTTPS
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allows cross-site cookies in production
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 }));
+
 
 // Initialize Passport.js
 app.use(passport.initialize());
