@@ -15,12 +15,12 @@ const LoginGate = () => {
 const handleLogin = () => {
   try {
     const baseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    console.log("🌐 Redirecting to:", `${baseUrl}/auth/discord`);
     window.location.href = `${baseUrl}/auth/discord`;
   } catch (err) {
     console.error("❌ Redirect failed:", err);
   }
 };
-
 
   if (loading) {
     return (
