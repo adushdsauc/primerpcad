@@ -150,6 +150,12 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser((user, done) => {
   done(null, user);
 });
+// In server.js
+app.get("/test-cookie", (req, res) => {
+  console.log("🍪 Session:", req.session);
+  console.log("👤 User:", req.user);
+  res.send("Session checked");
+});
 
 app.get("/auth/discord", passport.authenticate("discord"));
 
