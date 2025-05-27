@@ -77,7 +77,7 @@ passport.use(
     {
       clientID: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      callbackURL: "https://primerpcad-production.up.railway.app/auth/discord/callback",
+      callbackURL: `${process.env.BASE_URL}/auth/discord/callback`,
       scope: ["identify", "guilds", "guilds.members.read"],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -114,7 +114,6 @@ passport.use(
           }
         }
 
-        // Save/update user in DB (optional)
         let user = await User.findOne({ discordId: profile.id });
         if (!user) {
           user = await User.create({
@@ -126,7 +125,6 @@ passport.use(
           });
         }
 
-        // Create session user with roles
         const sessionUser = {
           discordId: profile.id,
           username: profile.username,
@@ -153,7 +151,6 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// Auth routes
 app.get("/auth/discord", passport.authenticate("discord"));
 
 app.get(
@@ -161,7 +158,7 @@ app.get(
   passport.authenticate("discord", { failureRedirect: "/auth/failure" }),
   (req, res) => {
     console.log("✅ Discord login success");
-    res.redirect("http://localhost:3000/home");
+    res.redirect(`${process.env.FRONTEND_URL}/home`);
   }
 );
 
@@ -170,31 +167,15 @@ app.get("/auth/failure", (req, res) => res.send("❌ Discord login failed"));
 app.get("/auth/logout", (req, res) => {
   req.logout((err) => {
     if (err) return res.status(500).send("Logout failed.");
-    res.redirect("http://localhost:3000");
+    res.redirect(`${process.env.FRONTEND_URL}`);
   });
 });
 
-// Provide session user data
 app.get("/api/auth/me", (req, res) => {
   if (!req.user) return res.status(401).json({ message: "Not logged in" });
 
-  const {
-    discordId,
-    username,
-    discriminator,
-    avatar,
-    globalName,
-    roles,
-  } = req.user;
-
-  res.json({
-    discordId,
-    username,
-    discriminator,
-    avatar,
-    globalName,
-    roles,
-  });
+  const { discordId, username, discriminator, avatar, globalName, roles } = req.user;
+  res.json({ discordId, username, discriminator, avatar, globalName, roles });
 });
 
 // API Routes
@@ -214,14 +195,13 @@ app.use("/api/dm", dmRoutes);
 app.use("/api/calls", callRoutes);
 app.use("/api/bolos", boloRoutes);
 app.use((req, res, next) => {
-  req.client = client; // ✅ Attach bot client to request
+  req.client = client;
   next();
 });
 app.use("/api/clock", clockRoutes);
 app.use("/api/psoreports", psoReportRoutes);
 app.use("/api/warrants", warrantRoutes);
 
-// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -232,20 +212,14 @@ mongoose
     console.error("❌ MongoDB connection error:", err);
   });
 
-// Log unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
   console.error("🧨 Unhandled Promise Rejection:", reason);
-  // Optional: exit for fatal errors in production
-  // process.exit(1);
 });
 
-// Log uncaught exceptions (sync errors)
 process.on("uncaughtException", (err) => {
   console.error("🔥 Uncaught Exception:", err);
-  // Optional: process.exit(1);
 });
 
-// Start server
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
