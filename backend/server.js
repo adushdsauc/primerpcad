@@ -66,22 +66,16 @@ app.use(
 );
 
 // Configure session management with memorystore
-app.use(
-  session({
-    name: "sid",
-    secret: process.env.SESSION_SECRET || "super-secret-session",
-    resave: false,
-    saveUninitialized: false,
-    store: new MemoryStore({
-      checkPeriod: 86400000 // Prune expired entries every 24h
-    }),
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    },
-  })
-);
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Ensures cookies are only sent over HTTPS
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Allows cross-site cookies in production
+  },
+}));
 
 // Initialize Passport.js
 app.use(passport.initialize());
