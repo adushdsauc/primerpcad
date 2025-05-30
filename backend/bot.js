@@ -66,7 +66,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     
       const dmEmbed = new EmbedBuilder()
         .setColor(customId === "clock_in" ? "Green" : "Red")
-        .setTitle(customId === "clock_in" ? "🟢 You are now clocked in." : "🔴 You are now clocked out.")
+        .setTitle(customId === "clock_in" ? " You are now clocked in." : " You are now clocked out.")
         .setDescription(`Officer **${officer.callsign}** has ${customId === "clock_in" ? "clocked in" : "clocked out"}.`)
         .setFooter({ text: dayjs().format("MMMM D, YYYY • h:mm A") });
     
